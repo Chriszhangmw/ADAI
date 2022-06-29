@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>语义测试</title>
+    <script src=../static/js/RecordRTC.js></script>
+    <style>
+        input {
+            font-size: 50px
+        }
+    </style>
+</head>
+<body>
+<div align="center" style="margin-top: 200px; line-height: 100px">
+
+    <div id="text_input">
+        <lable style="font-size:60px" id="question">请您写一句完整的、有意义的句子（句子必须有主语、动词）</lable>
+        <br>
+    <br>
+    <br>
+            <!--<video width="640" height="480" id="myVideo"></video>-->
+       <!-- <input type="button" name="" value="开始答题" id="startBtn" onclick="start()">-->
+        <input type="button" name="" value="结束答题" id="stopBtn" onclick="stop()">
+        <label id="display" style="display: none; font-size:50px; color:red">录制中</label>
+        <br>
+        <label id="text_label" for="text" style="font-size: 40px;display: none">请输入句子:</label><input id="text" type="text" name="sentence" autocomplete="off" autofocus="autofocus" style="height: 60px;width: 500px;display: none">
+    </div>
+</div>
+
+<script src=../static/js/TTS.js></script>
+<script type=text/javascript>
+
+    let language = "{{ language }}"
+    let videoStart = false;
+    let recorder;
+
+    function invokeGetDisplayMedia(success, error) {
+        let displaymediastreamconstraints = {
+            video: {
+                displaySurface: 'monitor', // monitor, window, application, browser
+                logicalSurface: true,
+                cursor: 'always' // never, always, motion
+            }
+        };
+
+        if (navigator.mediaDevices.getDisplayMedia) {
+            navigator.mediaDevices.getDisplayMedia(displaymediastreamconstraints).then(success).catch(error);
+        } else {
+            navigator.getDisplayMedia(displaymediastreamconstraints).then(success).catch(error);
+        }
+    }
+
+    function captureScreen(callback) {
+        this.invokeGetDisplayMedia((screen) => {
+            this.addStreamStopListener(screen, () => {
+                //
+            });
+            callback(screen);
+        }, function (error) {
+            console.error(error);
+            alert('Unable to capture your screen. Please check console logs.\n' + error);
+        });
+    }
+
+    function addStreamStopListener(stream, callback) {
+        stream.addEventListener('ended', function () {
+            callback();
+            callback = function () {
+            };
+        }, false);
+        stream.addEventListener('inactive', function () {
+            callback();
+            callback = function () {
+            };
+        }, false);
+        stream.getTracks().forEach(function (track) {
+            track.addEventListener('ended', function () {
+                callback();
+                callback = function () {
+                };
+            }, false);
+            track.addEventListener('inactive', function () {
+                callback();
+                callback = function () {
+                };
+            }, false);
+        });
+    }
+
+    function startRecording() {
+        captureScreen(screen => {
+            //video.srcObject = screen;
+            recorder = RecordRTC(screen, {
+                type: 'video',
+                mimeType: 'video / webm; codecs = h264',
+            });
+            recorder.startRecording();
+            // release screen on stopRecording
+            recorder.screen = screen;
+            videoStart = true;
+        });
+    }
+
+    //结束时上传到云端
+    function stopRecordingCallback() {
+        blob = recorder.getBlob();
+        var file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
+            type: 'video/mp4'
+        });
+        // create FormData
+        var formData = new FormData();
+        formData.append('video-filename', file.name);
+        formData.append('video-blob', file);
+
+        var sentence = document.getElementById('text').value;
+        if(sentence===''){
+            console.log("没有输入");
+            sentence = "输入错误"
+        }
+
+        formData.append('sentence', sentence)
+        console.log(formData.get("sentence"))
+
+        makeXMLHttpRequest('/semantic/handle', formData, function (request) {
+            console.log(request.responseText);
+        });
+        recorder.screen.stop();
+        recorder.destroy();
+        recorder = null;
+        videoStart = false;
+    }
+
+
+    function makeXMLHttpRequest(url, data, callback) {
+        let request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && request.status == 200) {
+                callback(request);
+            }
+        };
+        request.open('POST', url);
+        request.send(data);
+        location.href = "/pentagon"
+    }
+
+    function stopRecording() {
+        recorder.stopRecording(this.stopRecordingCallback);
+    }
+    function start() {
+        //setTimeout(TTS, 2000, "请您在下方输入框上书写一句完整的、有意义的句子[p500]（句子必须有主语、动词。）")
+        if(videoStart===false) {
+            startRecording();
+            videoStart= true;
+            document.getElementById("text").style.display = 'inline';
+            document.getElementById("text_label").style.display = 'inline';
+            document.getElementById('display').style.display = 'inline';
+            myVar = setTimeout(stop,90000);     //录制时间 90s
+        }
+       //window.location.href = "hwpen://"
+    }
+
+    function stop() {
+        if(videoStart==true){
+        var text = document.getElementById("text").value
+        console.log(text)
+        stopRecording();
+        clearTimeout(myVar)
+        }
+
+    }
+
+    function playQuestion() {
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/19.书写.wav";
+        const chongqing_url = "chongqing/20.书写.wav";
+        const chongqing_nan_url = "chongqing_nan/书写.wav";
+        const chongqing_nv_url = "chongqing_nv/19.书写.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if (language === 'mandarin') {
+            myAudio.src = base_url+mandarin_url;
+        } else if (language === 'chongqing') {
+            myAudio.src = base_url+chongqing_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        myAudio.addEventListener('ended', start,false);
+        myAudio.play();
+    }
+    window.onload = function () {
+        setTimeout(playQuestion, 2000);
+    }
+</script>
+
+
+</body>
+</html>

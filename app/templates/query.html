@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>查询</title>
+</head>
+<body>
+<form action="/query/name" method="post">
+    <center>姓名：<input type="text" name="name" autocomplete="off"><br>
+        测试日期：<input type="text" name="test_date" autocomplete="off"><br>
+        <input type="submit" value="查询"></center>
+</form>
+<table border="1" cellspacing="0" cellpadding="2" align="center">
+    <thead>
+    <th>姓名</th>
+    <th>出生日期</th>
+    <th>年份</th>
+    <th>季节</th>
+    <th>月份</th>
+    <th>日期</th>
+    <th>星期</th>
+    <th>城市</th>
+    <th>城区</th>
+    <th>街道</th>
+    <th>楼层</th>
+    <th>地方</th>
+    <th>即时记忆</th>
+    <th>计算</th>
+    <th>延时记忆</th>
+    <th>铅笔命名</th>
+    <th>手表命名</th>
+    <th>重复句子</th>
+    <th>手写句子</th>
+    <th>眨眼</th>
+    <th>折纸</th>
+    <th>画五边形</th>
+    <th>详细分数</th>
+    </thead>
+    <tbody>
+    {% for user in users %}
+        <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.birthday }}</td>
+        {% set i = loop.index0 %}
+        {% set result = results[i] %}
+        {% set path = paths[i] %}
+        {% for key in keys %}
+            {% set j = loop.index0 %}
+            <td><a href="#" onclick="show_audio({{ j }}, '{{path[key]}}')">{{result[key]}}</a></td>
+        {% endfor %}
+        <td><button onclick="show_result({{result['id']}})">详细分数</button></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<div id="myDiv"></div>
+<script>
+    function show_audio(j, file) {
+        if (j <= 15) {
+            var audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = file;
+            audio.play();
+        } else if (j <= 18) {
+            const page = window.open();
+            const html = "<body style='background:black'> <div style='width:80%;margin:auto;'>" +
+                "<video controls width='100%' src='" + file + "'></video>  </div> </body>";
+
+            page.document.write(html);
+        } else {
+            const page = window.open();
+            const html = "<body style='background:white'> <div style='width:40%;margin:auto;'>" +
+                "<img  width='100%' src='" + file + "'>  </div> </body>";
+
+            page.document.write(html);
+        }
+    }
+
+    function show_result(result_id) {
+        {#const formData = new FormData();#}
+        {#result_id = JSON.parse(result_id)#}
+        {#formData.append("asr_result_id", result_id[0]);#}
+        {#formData.append("person_result_id", result_id[1]);#}
+        makeXMLHttpRequest('/result/handle', result_id, function (request) {
+            document.getElementById("myDiv").innerHTML = request.responseText;
+        });
+    }
+
+    function makeXMLHttpRequest(url, data, callback) {
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (request.readyState === 4 && request.status === 200) {
+                callback(request);
+            }
+        };
+        request.open('POST', url);
+        request.send(data);
+    }
+</script>
+</body>
+</html>

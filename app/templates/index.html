@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>测试首页</title>
+</head>
+<body>
+<!--<div style="margin-top: 200px; color: black; font-size: 25px" align="center">
+    <a href="{{ url_for('main.ars') }}" target="_blank">语音测试</a><br>
+    <a href="{{ url_for('main.wink') }}" target="_blank">眨眼测试</a><br>
+    <a href="{{ url_for('main.semantic') }}" target="_blank">语义测试</a><br>
+    <a href="{{ url_for('main.fist') }}" target="_blank">握拳测试</a><br>
+    <a href="{{ url_for('main.updown') }}" target="_blank">指上下测试</a><br>
+    <a href="{{ url_for('main.paper') }}" target="_blank">折纸测试</a><br>
+    <a href="{{ url_for('main.pentagon_handle') }}" target="_blank">绘画测试</a><br>
+    <a href="{{ url_for('main.query') }}" target="_blank">查询</a><br>
+</div>-->
+<div style="margin-top: 200px; color: black; font-size: 25px" align="center">
+    <h1><a href="{{ url_for('main.ars') }}" target="_blank">语音测试</a>
+    <a href="{{ url_for('main.wink') }}" target="_blank">眨眼测试</a>
+    <a href="{{ url_for('main.semantic') }}" target="_blank">语义测试</a>
+        <a href="{{ url_for('main.fist') }}" target="_blank">握拳测试</a><br></h1>
+    <h1><a href="{{ url_for('main.updown') }}" target="_blank">指上下测试</a>
+    <a href="{{ url_for('main.paper') }}" target="_blank">折纸测试</a>
+    <a href="{{ url_for('main.pentagon_handle') }}" target="_blank">绘画测试</a><br></h1>
+    <h1><a href="{{ url_for('main.query') }}" target="_blank">查询</a></h1>
+</div>
+<form action="http://localhost:5000/">
+    <center><input type="submit" value="返回首页" style="font-size: 25px"></center>
+</form>
+</body>
+</html>

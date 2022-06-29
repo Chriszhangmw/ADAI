@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>眨眼测试</title>
+
+    <script src="https://cdn.staticfile.org/vue/2.2.2/vue.min.js"></script>
+    <style>
+        input {
+            font-size: 50px
+        }
+    </style>
+</head>
+<body>
+<div align="center" style="margin-top: 200px; line-height: 100px">
+    <lable style="font-size:80px; color:blue" id="question" >请闭上你的眼睛</lable>
+    <br>
+        <br>
+        <br>
+    <!--<video width="1280" height="720" id="myVideo"></video>-->
+    <!--<input type="button" name="" value="开始答题" id="startBtn">-->
+    <input type="button" name="" value="结束答题" id="stopBtn">
+    <label id="display" style="display: none; font-size:50px; color:red">录制中</label>
+</div>
+
+
+<script src=../static/js/MediaStreamRecorder.js></script>
+<script type="text/javascript" src=../static/js/jquery.js></script>
+<script src=../static/js/TTS.js></script>
+<script type="text/javascript">
+
+
+    //  判断浏览器
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    var constraints = {audio: false, video: {deviceId: '719bc79a0523e8a7d30ea127b0961119678b2f6c4d64bd6320b63248e361250b', width: 1280, height: 720}};
+    var videoStart = false; // 判断视频是否录制中
+    //  调用摄像头  成功后获取视频流：mediaStream
+    let recoder;    //摄像头
+    let myVar;  //定时器
+    let maVa1;
+    let language = "{{ language }}"
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function (mediaStream) {
+            /*var video = document.querySelector('video');
+            // 赋值 video 并开始播放
+            video.srcObject = mediaStream;
+            video.onloadedmetadata = function (e) {
+                video.play();
+            };*/
+            //  录像api的调用
+            recoder = new MediaStreamRecorder(mediaStream);
+            recoder.mimeType = 'video/mp4';
+
+            //  停止录像以后的回调函数
+            recoder.ondataavailable = function (blob) {
+                    uploadToServer(blob);
+            };
+
+            $("#stopBtn").click(function () {
+                if (videoStart) {
+                    stopFun()
+                }
+            })
+
+            // 上传
+            function uploadToServer(blob) {
+                var file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
+                    type: 'video/mp4'
+                });
+                // create FormData
+                var formData = new FormData();
+                formData.append('video-filename', file.name);
+                formData.append('video-blob', file);
+                console.log(formData);
+                makeXMLHttpRequest('/wink/handle', formData, function (request) {
+                    document.getElementById("myDiv").innerHTML = request.responseText;
+                });
+            }
+
+            function makeXMLHttpRequest(url, data, callback) {
+                var request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4 && request.status == 200) {
+                        callback(request);
+                    }
+                };
+                request.open('POST', url);
+                request.send(data);
+                location.href = '/paper';
+            }
+
+            //  上传结束
+        }).catch(function (err) {
+        console.log(err.name + ": " + err.message);
+    });
+    function stopFun() {
+        if(videoStart){
+            recoder.stop();
+            videoStart = false;
+            document.getElementById('display').style.display = 'none';
+            clearTimeout(myVar1)
+        }
+    }
+    function start() {
+        console.log("start")
+        console.time()
+        //  开始录像
+        if (videoStart === false) {
+            recoder.start(60000);
+            videoStart = true;
+            document.getElementById('display').style.display = 'inline';
+            myVar = setTimeout(playStop,10000)
+            myVar1 = setTimeout(stopFun, 15000);
+        }
+    }
+
+
+    function playStop(){
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/睁眼.wav";
+        const chongqing_url = "chongqing/18.阅读2.wav";
+        const chongqing_nan_url = "chongqing_nan/睁眼.wav";
+        const chongqing_nv_url = "chongqing_nv/17.睁眼.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if(language === 'mandarin'){
+            myAudio.src = base_url + mandarin_url;
+        }else if(language === 'chongqing'){
+            myAudio.src = base_url + chongqing_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        myAudio.play();
+    }
+    function playQuestion() {
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/16.闭眼.wav";
+        const chongqing_url = "chongqing/闭眼（补)重庆话.wav";
+        const chongqing_nan_url = "chongqing_nan/阅读.wav";
+        const chongqing_nv_url = "chongqing_nv/16.闭眼.wav";
+
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if (language === 'mandarin') {
+            myAudio.src = base_url+mandarin_url;
+        } else if (language === 'chongqing') {
+            myAudio.src = base_url+chongqing_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        myAudio.addEventListener('ended',start,false)
+        myAudio.play();
+    }
+    window.onload = function () {
+        setTimeout(playQuestion, 2000)
+    }
+</script>
+
+
+</body>
+</html>

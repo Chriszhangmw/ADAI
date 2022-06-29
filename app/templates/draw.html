@@ -1,0 +1,479 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>视觉空间</title>
+    <script src="../static/js/jquery.js"></script>
+    <link href="../static/js/buttons.css" rel="stylesheet" type="text/css">
+    <style>
+        body, html {
+            font-size: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Reset */
+        *, *:after, *:before {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: white;
+            color: #D5D6E2;
+            font-weight: 500;
+            font-size: 1.05em;
+            font-family: "Microsoft YaHei", "宋体", "Segoe UI", "Lucida Grande", Helvetica, Arial, sans-serif, FreeSans, Arimo;
+        }
+
+        a {
+            color: #2fa0ec;
+            text-decoration: none;
+            outline: none;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        h5 {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            font-size: 24px;
+            color: black;
+            text-align: center;
+            height: 40px;
+            line-height: 40px;
+        }
+
+        .sketchpad {
+            border-style: solid;
+            border-color: black;
+            background: #FFF;
+            width: 1020px;
+            height: 800px;
+            border-radius: 2px;
+            -webkit-box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+            -moz-box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+            box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+        }
+
+        .color-line {
+            text-align: center;
+            height: 50px;
+            line-height: 50px;
+        }
+
+        .color-line input {
+            vertical-align: middle;
+        }
+
+        .color-line span {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+<div align="center">
+    <h5>请您在屏幕上，按所给图的样子画图，结束后点击开始提交</h5>
+</div>
+<div style="float: left; margin-top: 30px">
+    <img src="../static/images/pentagon.png"><br>
+</div>
+
+<div id="main_content_wrap" class="outer">
+    <section id="main_content" class="inner">
+
+
+        <div style="margin-left: 450px">
+            <canvas class="sketchpad" id="sketchpad">
+                <canvas>
+                </canvas>
+            </canvas>
+        </div>
+    </section>
+    <div align="center">
+        <button class="button button-primary button-rounded button-large" onclick="canvasSaveToServer()">提交</button>
+        <button class="button button-primary button-rounded button-large" onclick="clear_canvas()">重新画</button>
+    </div>
+
+</div>
+<div>
+
+
+</div>
+
+<script type="text/javascript">
+    // 创建sketchpad面向对象
+    var sketchpad;
+    $(document).ready(function () {
+        sketchpad = new Sketchpad({
+            element: '#sketchpad',
+            width: 1020,
+            height: 800,
+            pointset: []
+        });
+    });
+
+    // 颜色
+    function color(event) {
+        sketchpad.color = $(event.target).val();
+    }
+
+    // 大小
+    function size(event) {
+        sketchpad.penSize = $(event.target).val();
+    }
+
+    function canvasSaveToServer() {
+        console.log(sketchpad.pointset);
+        var canvas = document.getElementById('sketchpad');
+        var imgUrl = canvas.toDataURL("image/png");
+        var imageDataB64 = imgUrl.substring(22);
+        // alert("savePic" + imageDataB64);
+
+        imgData = {
+            uploadImg: imageDataB64,
+            uploadPoint: sketchpad.pointset
+        };
+        var senddata = JSON.stringify(imgData);
+
+        //通过XMLHttpRequest 传送到后台
+        var xhr = new XMLHttpRequest();
+
+        xhr.open("POST", "/pentagon_handle", true);
+        xhr.setRequestHeader('content-type', 'application/json');
+        xhr.send(JSON.stringify(senddata));
+        location.href = '/thank';
+    }
+    function clear_canvas() {
+        sketchpad.clear();
+        sketchpad.pointset.length = 0;
+        sketchpad.strokes.length = 0;
+        console.log(sketchpad.pointset);
+    }
+
+    let language = "{{ language }}"   //语音播放选择
+    function playQuestion() {
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/20.视觉空间.wav";
+        const chongqing_url = "chongqing/21.画图.wav";
+        const chongqing_nan_url = "chongqing_nan/视空间.wav";
+        const chongqing_nv_url = "chongqing_nv/20.视觉空间.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if (language === 'mandarin') {
+            myAudio.src = base_url + mandarin_url;
+        } else if (language === 'chongqing') {
+            myAudio.src =base_url+ chongqing_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        //myAudio.addEventListener('ended', start, false);
+        myAudio.play();
+    }
+    window.onload = function () {
+        setTimeout(playQuestion, 2000)
+    }
+
+    // zhangyibo
+    // sketchpad.redraw(sketchpad.strokes); // 监听数组变化绘图方法
+    // this.reset();绘图方法
+
+    function Sketchpad(config) {
+        for (var key in this.constructor.prototype) {
+            this[key] = this[key].bind(this);
+        }
+
+        if (!config.hasOwnProperty('element')) {
+            console.error('SKETCHPAD ERROR: No element selected');
+            return;
+        }
+
+        if (typeof (config.element) === 'string') {
+            this.element = $(config.element);
+        } else {
+            this.element = config.element;
+        }
+
+        // 宽度
+        this._width = config.width || this.element.attr('data-width') || 0;
+        // 高度
+        this._height = config.height || this.element.attr('data-height') || 0;
+        // 颜色
+        this.color = config.color || this.element.attr('data-color') || '#000000';
+        // 大小
+        this.penSize = config.penSize || this.element.attr('data-penSize') || 5;
+        // 数组坐标点
+        this.strokes = config.strokes || [];
+        this._currentStroke = {
+            color: null,
+            size: null,
+            lines: [],
+        };
+        this.pointset = config.pointset;
+
+
+        this.undoHistory = config.undoHistory || [];
+
+        this._sketching = false;
+        // 画图
+        this.reset();
+        this.change();
+    }
+
+    //
+    // Private API
+    //
+    // 监听数组变化
+    Sketchpad.prototype.change = function (event) {
+        Array.prototype._push = Array.prototype.push;
+        Array.prototype.push = function (v) {
+            this._push(v);
+            if (typeof this.pushListener == 'function') this.pushListener.call(this, v)
+        }
+        // this.strokes= [];
+        // console.log(this.strokes)
+        this.strokes.pushListener = function (v) {
+            // console.log('数组发生变化');
+            // console.log(sketchpad.strokes)
+            sketchpad.redraw(sketchpad.strokes); // 监听数组变化绘图
+        }
+    };
+    // 位置
+    Sketchpad.prototype._cursorPosition = function (event) {
+        return {
+            x: event.pageX - $(this.canvas).offset().left,
+            y: event.pageY - $(this.canvas).offset().top,
+        };
+    };
+
+    Sketchpad.prototype._draw = function (start, end, color, size) {
+        this._stroke(start, end, color, size, 'source-over');
+    };
+
+    Sketchpad.prototype._erase = function (start, end, color, size) {
+        this._stroke(start, end, color, size, 'destination-out');
+    };
+
+    Sketchpad.prototype._stroke = function (start, end, color, size, compositeOperation) {
+        this.context.save();
+        this.context.lineJoin = 'round';
+        this.context.lineCap = 'round';
+        this.context.strokeStyle = color;
+        this.context.lineWidth = size;
+        this.context.globalCompositeOperation = compositeOperation;
+        this.context.beginPath();
+        this.context.moveTo(start.x, start.y);
+        this.context.lineTo(end.x, end.y);
+        this.context.closePath();
+        this.context.stroke();
+
+        this.context.restore();
+    };
+
+    //
+    // Callback Handlers
+    //
+
+    Sketchpad.prototype._mouseDown = function (event) {
+        this.pointset.push([event.pageX, event.pageY]);
+        this._lastPosition = this._cursorPosition(event);
+        this._currentStroke.color = this.color;
+        this._currentStroke.size = this.penSize;
+        this._currentStroke.lines = [];
+        this._sketching = true;
+        this.canvas.addEventListener('mousemove', this._mouseMove);
+    };
+
+    Sketchpad.prototype._mouseUp = function (event) {
+        if (this._sketching) {
+            this.strokes.push($.extend(true, {}, this._currentStroke));
+            this._sketching = false;
+            this.pointset.push([event.pageX, event.pageY]);
+        }
+        this.canvas.removeEventListener('mousemove', this._mouseMove);
+    };
+
+    Sketchpad.prototype._mouseMove = function (event) {
+        var currentPosition = this._cursorPosition(event);
+        this.pointset.push([event.pageX, event.pageY]);
+        this._draw(this._lastPosition, currentPosition, this.color, this.penSize);
+        this._currentStroke.lines.push({
+            start: $.extend(true, {}, this._lastPosition),
+            end: $.extend(true, {}, currentPosition),
+        });
+        this._lastPosition = currentPosition;
+    };
+
+    Sketchpad.prototype._touchStart = function (event) {
+        event.preventDefault();
+        if (this._sketching) {
+            return;
+        }
+        this._lastPosition = this._cursorPosition(event.changedTouches[0]);
+        this._currentStroke.color = this.color;
+        this._currentStroke.size = this.penSize;
+        this._currentStroke.lines = [];
+        this._sketching = true;
+        this.canvas.addEventListener('touchmove', this._touchMove, false);
+        this.pointset.push([Math.floor(event.changedTouches[0].pageX), Math.floor(event.changedTouches[0].pageY)])
+
+    };
+
+    Sketchpad.prototype._touchEnd = function (event) {
+        event.preventDefault();
+        if (this._sketching) {
+            this.strokes.push($.extend(true, {}, this._currentStroke));
+            this._sketching = false;
+            this.pointset.push([Math.floor(event.changedTouches[0].pageX), Math.floor(event.changedTouches[0].pageY)])
+        }
+        this.canvas.removeEventListener('touchmove', this._touchMove);
+    };
+
+    Sketchpad.prototype._touchCancel = function (event) {
+        event.preventDefault();
+        if (this._sketching) {
+            this.strokes.push($.extend(true, {}, this._currentStroke));
+            this._sketching = false;
+            this.pointset.push([Math.floor(event.changedTouches[0].pageX), Math.floor(event.changedTouches[0].pageY)])
+        }
+        this.canvas.removeEventListener('touchmove', this._touchMove);
+    };
+
+    Sketchpad.prototype._touchLeave = function (event) {
+        event.preventDefault();
+        if (this._sketching) {
+            this.strokes.push($.extend(true, {}, this._currentStroke));
+            this._sketching = false;
+            this.pointset.push([Math.floor(event.changedTouches[0].pageX), Math.floor(event.changedTouches[0].pageY)])
+        }
+        this.canvas.removeEventListener('touchmove', this._touchMove);
+    };
+
+    Sketchpad.prototype._touchMove = function (event) {
+        event.preventDefault();
+        var currentPosition = this._cursorPosition(event.changedTouches[0]);
+
+        this._draw(this._lastPosition, currentPosition, this.color, this.penSize);
+        this._currentStroke.lines.push({
+            start: $.extend(true, {}, this._lastPosition),
+            end: $.extend(true, {}, currentPosition),
+        });
+        this.pointset.push([Math.floor(event.changedTouches[0].pageX), Math.floor(event.changedTouches[0].pageY)]);
+        this._lastPosition = currentPosition;
+    };
+
+    //
+    // Public API
+    //
+
+    Sketchpad.prototype.reset = function () {
+        // Set attributes
+        this.canvas = this.element[0];
+        this.canvas.width = this._width;
+        this.canvas.height = this._height;
+        this.context = this.canvas.getContext('2d');
+
+        // Setup event listeners
+        this.redraw(this.strokes);
+
+        if (this.readOnly) {
+            return;
+        }
+
+        // Mouse
+        this.canvas.addEventListener('mousedown', this._mouseDown);
+        this.canvas.addEventListener('mouseout', this._mouseUp);
+        this.canvas.addEventListener('mouseup', this._mouseUp);
+
+        // Touch
+        this.canvas.addEventListener('touchstart', this._touchStart);
+        this.canvas.addEventListener('touchend', this._touchEnd);
+        this.canvas.addEventListener('touchcancel', this._touchCancel);
+        this.canvas.addEventListener('touchleave', this._touchLeave);
+    };
+
+    Sketchpad.prototype.drawStroke = function (stroke) {
+        for (var j = 0; j < stroke.lines.length; j++) {
+            var line = stroke.lines[j];
+            this._draw(line.start, line.end, stroke.color, stroke.size);
+        }
+    };
+
+    Sketchpad.prototype.redraw = function (strokes) {
+        for (var i = 0; i < strokes.length; i++) {
+            this.drawStroke(strokes[i]);
+        }
+    };
+
+    Sketchpad.prototype.toObject = function () {
+        return {
+            width: this.canvas.width,
+            height: this.canvas.height,
+            strokes: this.strokes,
+            undoHistory: this.undoHistory,
+        };
+    };
+
+    Sketchpad.prototype.toJSON = function () {
+        return JSON.stringify(this.toObject());
+    };
+
+    Sketchpad.prototype.animate = function (ms, loop, loopDelay) {
+        this.clear();
+        var delay = ms;
+        var callback = null;
+        for (var i = 0; i < this.strokes.length; i++) {
+            var stroke = this.strokes[i];
+            for (var j = 0; j < stroke.lines.length; j++) {
+                var line = stroke.lines[j];
+                callback = this._draw.bind(this, line.start, line.end,
+                    stroke.color, stroke.size);
+                this.animateIds.push(setTimeout(callback, delay));
+                delay += ms;
+            }
+        }
+        if (loop) {
+            loopDelay = loopDelay || 0;
+            callback = this.animate.bind(this, ms, loop, loopDelay);
+            this.animateIds.push(setTimeout(callback, delay + loopDelay));
+        }
+    };
+
+    Sketchpad.prototype.cancelAnimation = function () {
+        for (var i = 0; i < this.animateIds.length; i++) {
+            clearTimeout(this.animateIds[i]);
+        }
+    };
+
+    Sketchpad.prototype.clear = function () {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    };
+
+    Sketchpad.prototype.undo = function () {
+        this.clear();
+        var stroke = this.strokes.pop();
+        if (stroke) {
+            this.undoHistory.push(stroke);
+            this.redraw(this.strokes);
+        }
+    };
+
+    Sketchpad.prototype.redo = function () {
+        var stroke = this.undoHistory.pop();
+        if (stroke) {
+            this.strokes.push(stroke);
+            this.drawStroke(stroke);
+        }
+    };
+
+
+</script>
+
+</body>
+</html>

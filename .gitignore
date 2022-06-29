@@ -1,0 +1,12 @@
+app/model_src
+app/static
+LTP
+mohu.py
+package.json
+package-lock.json
+test.ipynb
+test2.py
+
+.idea
+*.iml
+__pycache__

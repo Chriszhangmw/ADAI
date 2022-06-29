@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>答案设置</title>
+
+        <style type="text/css">
+        .con {
+            margin: 100px auto 0;
+            width: 700px;
+            height: 300px;
+            background: #FFFFFF;
+            font-size: 25px;
+            line-height: 50px
+        }
+
+        .con form {
+            line-height: 35px;
+        }
+    </style>
+</head>
+<body>
+<div class="con">
+    管理员登录<br>
+    <form name="form1" action="/answer/config" method="post">
+        <label>账号：</label><input type="text" name="username" autocomplete="off"/><br>
+        <label>密码：</label><input type="password" name="password" autocomplete="off"/><br>
+        <input type="submit" value="登录" style="font-size:25px"/>
+    </form>
+    {% if text %}
+    {{ text }}
+    {% endif %}
+
+</div>
+
+</body>
+</html>

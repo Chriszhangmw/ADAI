@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Screen Record</title>
+    <!-- <link rel="stylesheet" href="index.css"> -->
+</head>
+<body>
+<button id="start" onclick="startRecording()">录屏</button>&nbsp;
+<button id="stop" onclick="stopRecording()">停止录屏</button>
+<video id="video" controls autoplay></video>
+<script src=../static/js/RecordRTC.js></script>
+<script>
+    let video = document.getElementById("video");
+    let videoStart = false;
+    let recorder;
+
+    function invokeGetDisplayMedia(success, error) {
+        let displaymediastreamconstraints = {
+            video: {
+                displaySurface: 'monitor', // monitor, window, application, browser
+                logicalSurface: true,
+                cursor: 'always' // never, always, motion
+            }
+        };
+        // above constraints are NOT supported YET
+        // that's why overridnig them
+        //displaymediastreamconstraints = {
+        //    video: true
+        //};
+        if (navigator.mediaDevices.getDisplayMedia) {
+            navigator.mediaDevices.getDisplayMedia(displaymediastreamconstraints).then(success).catch(error);
+        } else {
+            navigator.getDisplayMedia(displaymediastreamconstraints).then(success).catch(error);
+        }
+    }
+
+    function captureScreen(callback) {
+        this.invokeGetDisplayMedia((screen) => {
+            this.addStreamStopListener(screen, () => {
+                //
+            });
+            callback(screen);
+        }, function (error) {
+            console.error(error);
+            alert('Unable to capture your screen. Please check console logs.\n' + error);
+        });
+    }
+
+    function addStreamStopListener(stream, callback) {
+        stream.addEventListener('ended', function () {
+            callback();
+            callback = function () {
+            };
+        }, false);
+        stream.addEventListener('inactive', function () {
+            callback();
+            callback = function () {
+            };
+        }, false);
+        stream.getTracks().forEach(function (track) {
+            track.addEventListener('ended', function () {
+                callback();
+                callback = function () {
+                };
+            }, false);
+            track.addEventListener('inactive', function () {
+                callback();
+                callback = function () {
+                };
+            }, false);
+        });
+    }
+
+    function startRecording() {
+        captureScreen(screen => {
+            //video.srcObject = screen;
+            recorder = RecordRTC(screen, {
+                type: 'video',
+                mimeType: 'video / webm; codecs = h264',
+            });
+            recorder.startRecording();
+            // release screen on stopRecording
+            recorder.screen = screen;
+            videoStart = true;
+        });
+    }
+
+    //结束时下载到本地
+    function stopRecordingCallback1() {
+        //video.src = video.srcObject = null;
+        //video.src = URL.createObjectURL(recorder.getBlob());
+        //console.log(video.src);
+        let downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(recorder.getBlob());
+        downloadLink.download = "录屏.mp4";
+        downloadLink.click();
+        recorder.screen.stop();
+        recorder.destroy();
+        recorder = null;
+        videoStart = false;
+
+
+    }
+
+    //结束时上传到云端
+    function stopRecordingCallback() {
+        blob = recorder.getBlob();
+        var file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-')+'.mp4', {
+            type: 'video/mp4'
+        });
+        // create FormData
+        var formData = new FormData();
+        formData.append('video-filename', file.name);
+        formData.append('video-blob', file);
+        console.log(formData);
+
+        makeXMLHttpRequest('/semantic/test', formData, function (request) {
+            document.getElementById("myDiv").innerHTML = request.responseText;
+        });
+    }
+
+
+    function makeXMLHttpRequest(url, data, callback) {
+        let request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && request.status == 200) {
+                callback(request);
+            }
+        };
+        request.open('POST', url);
+        request.send(data);
+    }
+
+    function stopRecording() {
+        recorder.stopRecording(this.stopRecordingCallback);
+    }
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>语音测试</title>
+    <style type="text/css">
+        body {
+            text-align: center
+        }
+
+        div {
+            margin: 50px auto;
+            width: 1000px;
+            border: 1px solid blue;
+            text-align: center;
+        }
+
+        .btn {
+            margin: 30px;
+            font-size: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <lable id="record_flag" style="display: block; font-size:20px; color:red; position: absolute;" id="question">全程录音中</lable>
+    <lable style="font-size:80px" id="question">问题 1</lable>
+    <br>
+    <br>
+   <!-- <input type="button" class="btn" id="startBtn" value="开始答题"/>-->
+    <input type="button" class="btn" id="stopBtn" value="结束答题"/>
+    <label id="display" style="display: none; font-size:50px; color:red">录制中</label>
+</div>
+
+<div id="img" style="display: none"></div>
+
+<!--<script src="../static/js/MediaStreamRecorder.js"></script>-->
+<script type="text/javascript" src=../static/js/jquery.js></script>
+<script src=../static/js/RecordRTC.js></script>
+<script src=../static/js/TTS.js></script>
+<script type="text/javascript">
+
+    // 定义问题
+    /**
+    var questions_audio_url = ['今年的年份是？[p500]请点击开始答题', '现在是什么季节？[p500]请点击开始答题', '现在是几月？[p500]请点击开始答题',
+        '今天是几号？[p500]请点击开始答题', '今天是星期几？[p500]请点击开始答题', '我们现在在哪个城市[p500]请点击开始答题',
+        '我们在哪个区[p500]请点击开始答题', '我们在什么街道[p500]请点击开始答题', '我们现在是第几层楼？[p500]请点击开始答题',
+        '这儿是什么地方？[p500]请点击开始答题',
+        '现在我要说三样东西的名称，在我说完以后，请您重复一遍，并记住这三样东西，因为等一下要再问您，这三样东西是[p500]：“皮球、国旗、树木”。[p500]请点击开始答题并重复',
+        '现在请您从100减去7，然后从所得到数目再减去7，如此一直计算下去，把每一个答案都告诉我，直到我说“停”为止。[p500]请点击开始答题[p200]并计算100减7',
+        '现在请您告诉我，刚刚让您记住的三样东西是什么？[p500]请开始答题', '请问这是什么？[p500]请点击开始答题',
+        '请问这是什么？[p500]请点击开始答题',
+        '现在我要说一句话，请清楚的重复一遍，[p500]这句话是：“大家齐心协力[p50]拉紧绳”[p500]请点击开始答题并重复'];
+     */
+    // 问题索引
+    var index = 0;  //问题索引
+    //var url_index = 0; //路由索引
+    var urls = ['year', 'reason', 'month', 'day', 'week', 'city', 'area', 'street', 'floor', 'location',
+        'immediateMemory', 'compute', 'lateMemory', 'namePencil', 'nameWatch', 'repeat']
+    var isAudio = false; //没有播放音频，才能点击开始按钮
+
+    var language = "{{ language }}"   //语音播放选择
+    // 需要展示图片
+    function show_pencil() {
+        document.getElementById("img").innerHTML = "<img src='/static/images/pencil.jpg'/>";
+        document.getElementById("img").style.display = 'inline';
+    }
+
+    function show_watch() {
+        document.getElementById("img").innerHTML = "<img src='/static/images/watch.jpg'/>";
+        document.getElementById("img").style.display = 'inline';
+    }
+
+    function show_none() {
+        document.getElementById("img").style.display = 'none';
+    }
+
+    function playQuestion(index){
+        {#const mandarin_urls = ['year', 'reason', 'month', 'day', 'week', 'city', 'area', 'street', 'floor', 'location',#}
+        {#'immediateMemory', 'compute', 'lateMemory', 'namePencil', 'nameWatch', 'repeat']#}
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_urls = ['1.年份.wav','2.季节.wav','3.月.wav','4.几号.wav','5.星期几.wav','6.城市.wav','7.区.wav',
+            '8.街道.wav','9.楼层.wav', '10.地方.wav','11.即刻回忆.wav','12.计算.wav','13延迟回忆.wav','14.命名.wav','14.命名.wav','15.复述.wav']
+        const chongqing_urls = ['1.年.wav','2.季节.wav','3.月.wav','4.日.wav','5.星期.wav','6.城市.wav','7.区.wav',
+            '8.街道.wav','9.楼.wav', '10.地方.wav','11.即刻回忆.wav','12.计算.wav','14.延迟.wav','15.命名.wav','15.命名.wav','16.复述.wav']
+        const chongqing_nan_urls = ['年.wav','季节.wav','月.wav','号.wav','周几.wav','城市.wav','区.wav',
+            '街道.wav','楼.wav', '地方.wav','即刻.wav','计算.wav','延迟.wav','命名.wav','命名.wav','复述.wav']
+        const chongqing_nv_urls = ['1.年份.wav','2.季节.wav','3.月.wav','4.几号.wav','5.星期几.wav','6.城市.wav','7.区.wav',
+            '8.街道.wav','9.楼层.wav', '10.地方.wav','11.即刻回忆.wav','12.计算.wav','13延迟回忆.wav','14.命名.wav','14.命名.wav','15.复述.wav']
+        let myAudio = new Audio();
+        console.log(urls[index])
+        myAudio.preload = true;
+
+        if(language === 'mandarin'){
+            myAudio.src = base_url + "mandarin/" + mandarin_urls[index];
+        }else if(language === 'chongqing'){
+            myAudio.src = base_url + "chongqing/" + chongqing_urls[index];
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + "chongqing_nan/" + chongqing_nan_urls[index];
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + "chongqing_nv/" + chongqing_nv_urls[index];
+        }
+        myAudio.addEventListener('ended', start,false);
+        myAudio.play();
+    }
+    function playStop(){
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/停.wav";
+        const chongqing_url = "chongqing/13.停.wav";
+        const chongqing_nan_url = "chongqing_nan/停.wav";
+        const chongqing_nv_url = "chongqing_nv/停.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if(language === 'mandarin'){
+            myAudio.src = base_url + mandarin_url;
+        }else if(language === 'chongqing'){
+            console.log("使用重庆话开始播报")
+            myAudio.src = base_url + chongqing_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        myAudio.play();
+    }
+    function playQianDaoYu(){
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/引导语.wav";
+        const chongqing_nan_url = "chongqing_nan/引导语.wav";
+        const chongqing_nv_url = "chongqing_nv/引导语.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if(language === 'mandarin'){
+            myAudio.src = base_url + mandarin_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        myAudio.addEventListener('ended', function(){nextQuestion(0)},false);
+        myAudio.play();
+    }
+    function nextQuestion(index) {
+
+        if (index === 16) {
+            window.location.href = "/wink"
+        } else if (0 <= index && index <= 15) {
+            document.getElementById("question").innerHTML = "问题 " + (index + 1);
+            if (index === 13) {
+                show_pencil();
+            }
+            if (index === 14) {
+                show_watch();
+            }
+            if (index !== 13 && index !== 14) {
+                show_none();
+            }
+            playQuestion(index);
+        }
+
+    }
+
+    let audioStart = false;
+    let recorder;
+    let myVar; // 用来取消setTimeout,设置每个问题时间
+    let myVar1; // 用来取消计算喊停
+
+    function indexStop() {
+        if (index >= 0 && index <= 9) {
+            myVar = setTimeout(stopFun, 10000);
+        } else if (index === 11) {
+            myVar = setTimeout(stopFun, 52000);
+        } else if (index === 12) {
+            myVar = setTimeout(stopFun, 30000);
+        } else if (index === 13 || index === 14) {
+            myVar = setTimeout(stopFun, 5000);
+        } else {
+            myVar = setTimeout(stopFun, 10000);
+        }
+    }
+    function stopFun() {
+        if (audioStart ) {
+            console.log("停止录音")
+            recorder.stopRecording(stopRecordingCallback);
+            document.getElementById('display').style.display = 'none';
+            if (index === 11) {
+                clearTimeout(myVar1);
+            }
+        }
+    }
+
+    function start() {
+        //  开始录音
+        if (audioStart===false) {
+            startRecording();
+            console.log("开始录音")
+            document.getElementById('display').style.display = 'inline';
+            if (index === 11) {
+                myVar1 = setTimeout(playStop, 50000);
+            }
+            indexStop();
+        }
+    }
+
+    $("#stopBtn").click(function () {
+        stopFun();
+        clearTimeout(myVar);
+    })
+
+
+    function invokeGetDisplayMedia(success, error) {
+        let displaymediastreamconstraints = {
+            audio: true
+        };
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia(displaymediastreamconstraints).then(success).catch(error);
+        }
+    }
+
+    function captureScreen(callback) {
+        this.invokeGetDisplayMedia((mediaStream) => {
+            callback(mediaStream);
+        }, function (error) {
+            console.error(error);
+            alert('Unable to capture your screen. Please check console logs.\n' + error);
+        });
+    }
+
+    function startRecording() {
+        captureScreen(mediaStream => {
+            recorder = RecordRTC(mediaStream, {
+                type: 'audio',
+                mimeType: 'audio/wav;',
+                recorderType: StereoAudioRecorder,
+                desiredSampRate: 16000,
+                numberOfAudioChannels: 1,
+            });
+
+            recorder.startRecording();
+            // release screen on stopRecording
+            audioStart = true;
+        });
+    }
+
+    // 上传
+    function stopRecordingCallback() {
+        blob = recorder.getBlob();
+        var file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + urls[index] + '.wav', {
+            type: 'audio/wav'
+        });
+        // create FormData
+        var formData = new FormData();
+        formData.append('audio-filename', file.name);
+        formData.append('audio-blob', file);
+        console.log(formData);
+        var q_url = '/ars/' + urls[index]
+
+        $.ajax({
+            type:'POST',
+            url:q_url,
+            data: formData,
+            dataType:'text',
+            contentType:false,
+            processData:false,
+            success: function(result){
+                console.log(result)
+                console.log(result);
+                index = index + 1;
+                nextQuestion(index);
+            },
+            error: function (error) {
+                console.log(error)
+            }
+        })
+        recorder.destroy();
+        recorder = null;
+        audioStart = false;
+
+        // 显示是否全程录音
+        $.ajax({
+			type: 'GET',
+			url: '/ars/StartRecord',
+			dataType: 'json',
+			data: {'name':'get'},
+			success: function(res){
+				console.log(res);
+				console.log(res.status);
+				if (res.status === true){
+				    document.getElementById('record_flag').innerHTML = '全程录音中';
+				    document.getElementById('record_flag').style.color = 'red';
+				}
+				else{
+				    document.getElementById('record_flag').innerHTML = '未全程录音';
+				    document.getElementById('record_flag').style.color = 'darkgray';
+
+
+				}
+
+			},
+			error: function(){
+				consle.log('error');
+				document.getElementById('record_flag').innerHTML = '未全程录音';
+                document.getElementById('record_flag').style.color = 'darkgray';
+
+			}
+		})
+    }
+    window.onload = function () {
+        playQianDaoYu()
+        //setTimeout(nextQuestion, 3000,0)
+    }
+</script>
+</body>
+</html>

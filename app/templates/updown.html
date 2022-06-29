@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>指上指下测试</title>
+
+    <script src=../static/js/vue.js></script>
+    <style>
+        input {font-size:20px}
+    </style>
+</head>
+<body>
+<div align="center" style="margin-top: 200px; line-height: 100px">
+    <lable style="font-size:50px" id="question">指指屋顶，然后指指地板</lable><br>
+
+<!--<video width="640" height="480" id="myVideo"></video>-->
+    <input type="button" name="" value="开始" id="startBtn">
+    <input type="button" name="" value="停止" id="stopBtn">
+    <input type="button" name="" value="重新开始录像" id="ppBtn">
+    <label id="display" style="display: none">录制中</label>
+    <input type="button" class="btn" id="next" value="下一题" onclick="location.href='/pentagon'"/>
+</div>
+
+<div id="myDiv" style="display:inline">指上得分：指下得分：总分：</div>
+
+<div id="bdtts_div_id" style="display: none">
+    <audio id="tts_autio_id" autoplay="autoplay">
+        <source id="tts_source_id" src="http://tts.baidu.com/text2audio?lan=zh&ie=UTF-8&spd=5&per=1&text=请您指下屋顶，然后指下地板"
+                type="audio/mpeg">
+        <embed id="tts_embed_id" height="0" width="0" src="">
+    </audio>
+</div>
+
+
+<script src=../static/js/MediaStreamRecorder.js></script>
+<script type="text/javascript" src=../static/js/jquery.js></script>
+<script type="text/javascript">
+    //  判断浏览器
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    const constraints = {audio: false, video: {width: 1280, height: 720}};
+
+    let aa = ''; //防止两次上传
+    //  调用摄像头  成功后获取视频流：mediaStream
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function (mediaStream) {
+            //const video = document.querySelector('video');
+            //  赋值 video 并开始播放
+            //video.srcObject = mediaStream;
+            //video.onloadedmetadata = function (e) {
+            //    video.play();
+            //};
+            //  录像api的调用
+            var mediaRecorder = new MediaStreamRecorder(mediaStream);
+            mediaRecorder.mimeType = 'video/mp4';
+
+            //  停止录像以后的回调函数
+            mediaRecorder.ondataavailable = function (blob) {
+                // POST/PUT "Blob" using FormData/XHR2
+                // var blobURL = URL.createObjectURL(blob);
+                // console.log(blob);
+                // document.write('<a href="' + blobURL + '">' + blobURL + '</a>');
+                //  停止以后调用上传
+                if (aa === "") {
+                    uploadToServer(blob);
+                    aa = blob
+                }
+            };
+
+
+            $("#startBtn").click(function () {
+                //  开始录像
+                mediaRecorder.start(10000);
+                document.getElementById('display').style.display = 'inline';
+            })
+
+            $("#stopBtn").click(function () {
+                //  停止录像
+                mediaRecorder.stop();
+                document.getElementById('display').style.display = 'none';
+            })
+
+            $("#ppBtn").click(function () {
+                if (aa !== "") {
+                    aa = "";
+                    mediaRecorder.start();
+                     document.getElementById('display').style.display = 'inline';
+                }
+            })
+
+            // 上传
+            function uploadToServer(blob) {
+                const file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
+                    type: 'video/mp4'
+                });
+                // create FormData
+                const formData = new FormData();
+                formData.append('video-filename', file.name);
+                formData.append('video-blob', file);
+                console.log(formData);
+                makeXMLHttpRequest('/updown/handle', formData, function (request) {
+                    document.getElementById("myDiv").innerHTML=request.responseText;
+                });
+            }
+
+            function makeXMLHttpRequest(url, data, callback) {
+                const request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState === 4 && request.status === 200) {
+                        callback(request);
+                    }
+                };
+                request.open('POST', url);
+                request.send(data);
+            }
+
+            //  上传结束
+        })
+        .catch(function (err) {
+            console.log(err.name + ": " + err.message);
+        });
+</script>
+
+
+</body>
+</html>

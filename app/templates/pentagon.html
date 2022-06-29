@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>视觉空间</title>
+    <style>
+        input {font-size:20px}
+    </style>
+    <style type="text/css">
+        canvas {
+            border: 1px solid green;
+        }
+    </style>
+</head>
+<script type="text/javascript" src=../static/js/jquery.js></script>
+<body>
+    <div align="center" style="margin-top: 200px; line-height: 100px">
+        <lable style="font-size:50px" id="question">请您在屏幕上，按所给图的样子画图，结束后点击开始提交</lable><br>
+        <img src="/static/images/pentagon.png"><br>
+        <input type="button" class="btn" id="next" value="开始测试" onclick="location.href='/pentagon_handle'"/>
+    </div>
+
+<div id="bdtts_div_id" style="display: none">
+    <audio id="tts_autio_id" autoplay="autoplay">
+        <source id="tts_source_id" src="http://tts.baidu.com/text2audio?lan=zh&ie=UTF-8&spd=2&per=1&text=请您在屏幕上，按所给图的样子画图"
+                type="audio/mpeg">
+        <embed id="tts_embed_id" height="0" width="0" src="">
+    </audio>
+</div>
+
+    <canvas id="drawing-board" width="800" height="600"></canvas><br>
+<script type="text/javascript">
+    //创建画布
+    var canvas = document.getElementById('drawing-board');
+    var ctx = canvas.getContext('2d');
+
+    //设置当前画布为画笔状态
+    var painting = false;
+    var lastPoint = {x: undefined, y: undefined};
+    var last = null;
+
+    var pointset = [];
+
+    canvas.ontouchstart = function () {
+
+        canvas.ontouchmove = move;
+    };
+
+    canvas.ontouchend = function () {
+        canvas.ontouchmove = null;
+        last = null;
+    };
+
+    canvas.ontouchcancel = function () {
+        canvas.ontouchmove = null;
+        last = null;
+    };
+
+    function move(e) {
+        if (last != null) {
+            ctx.beginPath();
+            ctx.moveTo(last[0], last[1]);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.lineWidth=3
+            ctx.stroke();
+        }
+        // 第一次触发这个函数，只做一件事，把当前 鼠标的 x , y 的位置记录下来
+        // 做下一次 线段的 起始点。
+        last = [e.offsetX, e.offsetY];
+        pointset.push(last);
+    }
+</script>
+<script type="text/javascript">
+
+    function canvasSaveToServer() {
+        var imgUrl = canvas.toDataURL("image/png");
+        var imageDataB64 = imgUrl.substring(22);
+        // alert("savePic" + imageDataB64);
+
+        imgData = {uploadImg:imageDataB64,
+                    uploadPoint:pointset};
+        var senddata = JSON.stringify(imgData);
+
+        //通过XMLHttpRequest 传送到后台
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/pentagon_handle", true);
+        xhr.setRequestHeader('content-type', 'application/json');
+        xhr.send(JSON.stringify(senddata));
+
+    }
+</script>
+</body>
+</html>

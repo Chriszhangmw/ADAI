@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试结果</title>
+</head>
+<body>
+    <table border="1" cellspacing="0" cellpadding="2" align="center">
+      <tr>
+        <th>测试日期</th>
+        <th>患者姓名</th>
+        <th>出生日期</th>
+        <th>患者性别</th>
+        <th>患者年龄</th>
+        <th>文化程度</th>
+      </tr>
+      <tr>
+        <td>xxxx/xx/xx</td>
+        <td>xxx</td>
+        <td>xxxx/xx/xx</td>
+        <td>x</td>
+        <td>xx</td>
+        <td>xx</td>
+      </tr>
+    </table>
+    <br>
+    <table border="1" cellspacing="0" cellpadding="2" align="center">
+        <thead>
+            <th>项目</th>
+            <th>分数</th>
+        </thead>
+        <tody>
+            {% for key, value in result.items()%}
+                <tr>
+                    <td>{{key}}</td>
+                    <td>{{value}}</td>
+                </tr>
+            {% endfor %}
+        </tody>
+    </table>
+    <div style="margin-left: 30%">
+        <text >总结：</text>
+        <text >xxxx:xxxx</text>
+    </div>
+    <br>
+    <div style="margin-left: 60%">
+        <text >报告日期：</text>
+        <text >xxxx/xx/xx</text>
+    </div>
+
+
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>折纸测试</title>
+
+    <script src=../static/js/vue.js></script>
+    <style>
+        input {
+            font-size: 50px
+        }
+    </style>
+</head>
+<body>
+
+<div align="center" style="margin-top: 200px; line-height: 100px">
+    <!--<video width="1280" height="720" id="myVideo"></video>-->
+    <lable style="font-size:80px" id="question">按语音提示完成动作</lable>
+    <br>
+    <br>
+    <br>
+    <!--<input type="button" name="" value="开始答题" id="startBtn">-->
+    <input type="button" name="" value="结束答题" id="stopBtn">
+    <label id="display" style="display: none; font-size:50px; color:red">录制中</label>
+</div>
+<script src=../static/js/MediaStreamRecorder.js></script>
+<script type="text/javascript" src=../static/js/jquery.js></script>
+<script src=../static/js/TTS.js></script>
+<script type="text/javascript">
+
+    //  判断浏览器
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    const constraints = {audio: false, video: {deviceId: 'f5e0c4a1c609a8ab0c78875df4d7b18bb03c1459f5e33a11ea3ed0723b5c6172', width: 1280, height: 720}};
+
+    var enumeratorPromise = navigator.mediaDevices.enumerateDevices();
+    console.log(enumeratorPromise);
+    // 719bc79a0523e8a7d30ea127b0961119678b2f6c4d64bd6320b63248e361250b
+
+    // f5e0c4a1c609a8ab0c78875df4d7b18bb03c1459f5e33a11ea3ed0723b5c6172
+    var videoStart = false; // 判断视频是否录制中
+    //  调用摄像头  成功后获取视频流：mediaStream
+    let mediaRecorder;
+    let myVar;
+    let aa ='';
+    let language = "{{ language }}"   //语音播放选择
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function (mediaStream) {
+            /*const video = document.querySelector('video');
+            //  赋值 video 并开始播放
+            video.srcObject = mediaStream;
+            video.onloadedmetadata = function (e) {
+                video.play();
+            };*/
+            //  录像api的调用
+            mediaRecorder = new MediaStreamRecorder(mediaStream);
+            mediaRecorder.mimeType = 'video/mp4';
+
+            //  停止录像以后的回调函数
+            mediaRecorder.ondataavailable = function (blob) {
+                if (aa === "") {
+                    console.log("上传");
+                    uploadToServer(blob);
+                    aa = blob
+                }
+            };
+
+            $("#stopBtn").click(function () {
+                if (videoStart) {
+                    stopFun()
+                }
+            })
+
+            // 上传
+            function uploadToServer(blob) {
+                const file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
+                    type: 'video/mp4'
+                });
+                // create FormData
+                const formData = new FormData();
+                formData.append('video-filename', file.name);
+                formData.append('video-blob', file);
+                console.log(formData);
+                makeXMLHttpRequest('/paper/handle', formData, function (request) {
+                    console.log(request.responseText);
+                });
+            }
+
+            function makeXMLHttpRequest(url, data, callback) {
+                const request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState === 4 && request.status === 200) {
+                        callback(request);
+                    }
+                };
+                request.open('POST', url);
+                request.send(data);
+                location.href = '/semantic';
+            }
+
+            //  上传结束
+        }).catch(function (err) {
+        console.log(err.name + ": " + err.message);
+    });
+
+    function stopFun() {
+
+        mediaRecorder.stop();
+        videoStart = false;
+        document.getElementById('display').style.display = 'none';
+        clearTimeout(myVar)
+    }
+
+    function start() {
+        //  开始录像
+        if (videoStart === false) {
+            mediaRecorder.start(60000);
+            videoStart = true;
+            document.getElementById('display').style.display = 'inline';
+            myVar = setTimeout(stopFun, 30000)
+        }
+    }
+    function playQuestion() {
+        const base_url = "http://127.0.0.1:5000/static/language/"
+        const mandarin_url = "mandarin/18.理解.wav";
+        const chongqing_url = "chongqing/19.理解.wav";
+        const chongqing_nan_url = "chongqing_nan/理解.wav";
+        const chongqing_nv_url = "chongqing_nv/18.理解.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        if (language === 'mandarin') {
+            myAudio.src = base_url + mandarin_url;
+        } else if (language === 'chongqing') {
+            myAudio.src =base_url+ chongqing_url;
+        }else if(language === 'chongqing_nan'){
+            myAudio.src = base_url + chongqing_nan_url;
+        }else if(language === 'chongqing_nv'){
+            myAudio.src = base_url + chongqing_nv_url;
+        }
+        myAudio.addEventListener('ended', start, true);
+        myAudio.play();
+    }
+    window.onload = function () {
+        setTimeout(playQuestion, 2000)
+    }
+</script>
+</body>
+</html>

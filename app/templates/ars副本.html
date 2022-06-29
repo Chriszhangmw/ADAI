@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>语音测试</title>
+    <style type="text/css">
+        body {
+            text-align: center
+        }
+
+        div {
+            margin: 50px auto;
+            width: 1000px;
+            border: 1px solid blue;
+            text-align: center;
+        }
+
+        .btn {
+            margin: 30px;
+            font-size: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <lable style="font-size:50px" id="question">问题 1</lable>
+    <br>
+    <input type="button" class="btn" id="startBtn" value="开始答题"/>
+    <input type="button" class="btn" id="stopBtn" value="结束答题"/>
+    <label id="display" style="display: none">录制中</label>
+</div>
+
+<div id="img" style="display: none"></div>
+
+<script src="../static/js/MediaStreamRecorder.js"></script>
+<script type="text/javascript" src=../static/js/jquery.js></script>
+<script src=../static/js/RecordRTC.js></script>
+<script src=../static/js/TTS.js></script>
+<script type="text/javascript">
+
+    // 定义问题
+    var questions = ['今年的年份是？[p500]请点击开始答题', '现在是什么季节？[p500]请点击开始答题', '现在是几月？[p500]请点击开始答题',
+        '今天是几号？[p500]请点击开始答题', '今天是星期几？[p500]请点击开始答题', '我们现在在哪个城市[p500]请点击开始答题',
+        '我们在哪个区[p500]请点击开始答题', '我们在什么街道[p500]请点击开始答题', '我们现在是第几层楼？[p500]请点击开始答题',
+        '这儿是什么地方？[p500]请点击开始答题',
+        '现在我要说三样东西的名称，在我说完以后，请您重复一遍，并记住这三样东西，因为等一下要再问您，这三样东西是[p500]：“皮球[p500]、国旗[p500]、树木”。[p500]请点击开始答题并重复',
+        '现在请您从100减去7，然后从所得到数目再减去7，如此一直计算下去，把每一个答案都告诉我，直到我说“停”为止。[p500]请点击开始答题[p200]并计算100减7',
+        '现在请您告诉我，刚刚让您记住的三样东西是什么？[p500]请开始答题', '请问这是什么？[p500]请点击开始答题',
+        '请问这是什么？[p500]请点击开始答题',
+        '现在我要说一句话，请清楚的重复一遍，[p500]这句话是：“大家齐心协力[p50]拉紧绳”[p500]请点击开始答题并重复'];
+    // 问题索引
+    var index = 0;  //问题索引
+    var url_index = 0; //路由索引
+    var urls = ['year', 'reason', 'month', 'day', 'week', 'city', 'area', 'street', 'floor', 'location',
+        'immediateMemory', 'compute', 'lateMemory', 'namePencil', 'nameWatch', 'repeat']
+
+    // 需要展示图片
+    function show_pencil() {
+        document.getElementById("img").innerHTML = "<img src='/static/images/pencil.jpg'/>";
+        document.getElementById("img").style.display = 'inline';
+    }
+
+    function show_watch() {
+        document.getElementById("img").innerHTML = "<img src='/static/images/watch.jpg'/>";
+        document.getElementById("img").style.display = 'inline';
+    }
+
+    function show_none() {
+        document.getElementById("img").style.display = 'none';
+    }
+
+    function nextQuestion() {
+        if (index === 15) {
+            window.location.href = "/wink"
+        } else if (0 <= index && index <= 14) {
+            index += 1;
+            aa = '';
+            let text = questions[index]
+            document.getElementById("question").innerHTML = "问题 " + (index + 1);
+            TTS(text);
+            if (index === 13) {
+                show_pencil();
+            }
+            if (index === 14) {
+                show_watch();
+            }
+            if (index !== 13 && index !== 14) {
+                show_none();
+            }
+        }
+
+    }
+
+    let audioStart = false;
+    let recorder;
+    let aa = ''; //防止两次上传
+    let myVar; // 用来取消setTimeout,设置每个问题时间
+    let myVar1; // 用来取消计算喊停
+
+    function indexStop() {
+        if (index >= 0 && index <= 9) {
+            myVar = setTimeout(stopFun, 10000);
+        } else if (index === 11) {
+            myVar = setTimeout(stopFun, 52000);
+        } else if (index === 12) {
+            myVar = setTimeout(stopFun, 30000);
+        } else if (index === 13 || index === 14) {
+            myVar = setTimeout(stopFun, 5000);
+        } else {
+            myVar = setTimeout(stopFun, 10000);
+        }
+    }
+    function stopFun() {
+        if (aa === ""&& audioStart ) {
+            recorder.stopRecording(stopRecordingCallback);
+            document.getElementById('display').style.display = 'none';
+            aa = "true"
+            if (index === 11) {
+                clearTimeout(myVar1);
+            }
+            nextQuestion()
+        }
+    }
+
+    $("#startBtn").click(function () {
+        //  开始录像
+        if (aa === "") {
+            startRecording();
+            document.getElementById('display').style.display = 'inline';
+            if (index === 11) {
+                myVar1 = setTimeout(TTS, 50000, "停");
+            }
+            indexStop();
+        }
+    })
+
+    $("#stopBtn").click(function () {
+        // 如果没有录制，audiostart==false,则直接跳转下一页页面，不提交答案
+       /* if(!audioStart){
+            nextQuestion()
+        }else {
+            //  停止录像
+            stopFun();
+            clearTimeout(myVar);
+        }*/
+
+        stopFun();
+        clearTimeout(myVar);
+    })
+
+
+    function invokeGetDisplayMedia(success, error) {
+        let displaymediastreamconstraints = {
+            audio: true
+        };
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia(displaymediastreamconstraints).then(success).catch(error);
+        }
+    }
+
+    function captureScreen(callback) {
+        this.invokeGetDisplayMedia((mediaStream) => {
+            callback(mediaStream);
+        }, function (error) {
+            console.error(error);
+            alert('Unable to capture your screen. Please check console logs.\n' + error);
+        });
+    }
+
+    function startRecording() {
+        captureScreen(mediaStream => {
+            recorder = RecordRTC(mediaStream, {
+                type: 'audio',
+                mimeType: 'audio/wav;',
+                recorderType: StereoAudioRecorder,
+                desiredSampRate: 16000,
+                numberOfAudioChannels: 1,
+            });
+            recorder.startRecording();
+            // release screen on stopRecording
+            audioStart = true;
+        });
+    }
+
+    // 上传
+    function stopRecordingCallback() {
+        blob = recorder.getBlob();
+        var file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + urls[url_index] + '.wav', {
+            type: 'audio/wav'
+        });
+        // create FormData
+        var formData = new FormData();
+        formData.append('audio-filename', file.name);
+        formData.append('audio-blob', file);
+        console.log(formData);
+        var url = '/ars/' + urls[url_index]
+
+        makeXMLHttpRequest(url, formData, function (request) {
+            console.log(request.responseText);
+        });
+        url_index += 1;
+        recorder.destroy();
+        recorder = null;
+        audioStart = false;
+    }
+
+    function makeXMLHttpRequest(url, data, callback) {
+        let request = new XMLHttpRequest();
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && request.status == 200) {
+                callback(request);
+            }
+        };
+        request.open('POST', url, false);
+        request.send(data);
+    }
+
+
+    window.onload = function () {
+        setTimeout(TTS, 2000, "今年的年份是？[p500]请开始答题");
+    }
+</script>
+</body>
+</html>

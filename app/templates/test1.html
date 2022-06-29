@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>调用本地应用</title>
+</head>
+<body>
+<div>
+    <a href="hwpen://">开启网易云</a>
+    <button>杀死网易云</button>
+</div>
+<script type="text/javascript" src="../static/js/jquery.js"></script>
+<script type="text/javascript">
+    $("button").click(function () {
+        $.ajax({
+            url:"/test/handle"
+        })
+    })
+</script>
+</body>
+</html>

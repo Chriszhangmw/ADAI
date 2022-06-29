@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>home</title>
+    <style type="text/css">
+        .top{
+            margin-top: 10px;
+            width: 100%;
+            text-align: right;
+            font-size: 25px;
+        }
+        .con {
+            margin: 100px auto 0;
+            width: 1200px;
+            height: 400px;
+            background: #FFFFFF;
+            font-size: 50px;
+            line-height: 60px
+        }
+
+        .con form {
+            line-height: 80px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top">
+    <input type="button" value="设置问题答案" onclick="location.href='/answer/login'">
+    <input type="button" value="查询全部结果" onclick="location.href='/query'">
+</div>
+
+<div class="con">
+    您好，下面将对您进行一项测试。<br>
+    测试开始之前，请您或您的家属填写个人信息。<br>
+    填写完毕后，请点击“开始答题”。
+    <form name="form1" action="/home/handle" method="post" onsubmit="return check();">
+        <label for="username">姓名：</label><input type="text" name="username" autocomplete="off" style="font-size: 30px"/><br>
+        (日期格式如：2021-01-01）<br>
+        <lable for="birthday">出生日期：</lable><input type="text" name="birthday" autocomplete="off" style="font-size: 30px"/><br>
+        请您选择问题播报语音<br>
+        <label><input type="radio" name="language" value="chongqing_nan" checked="checked" />男声重庆话</label>
+        <label><input type="radio" name="language" value="chongqing_nv" />女声重庆话</label>
+        <label><input type="radio" name="language" value="mandarin" />普通话</label><br>
+        <input type="submit" value="开始答题" style="font-size:40px"/>
+    </form>
+</div>
+
+<script type="text/javascript" src="../static/js/jquery.js"></script>
+<script type="text/javascript" src="../static/js/TTS.js"></script>
+<script type="text/javascript">
+
+
+    function isEmpty(obj) {
+        obj = $.trim(obj)
+        if (typeof obj == "undefined" || obj == null || obj == "") {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function isDate(str){
+        //2009-1-1
+        //2009/1/21
+        //2009.1.28
+        var regex = new RegExp("^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\\1(?:29|30)|(?:0?[13578]|1[02])\\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\\2(?:29))$");
+        flag = regex.test(str)
+        console.log(flag)
+        return flag
+        //return false
+    }
+    function check() {
+        if(isEmpty(form1.username.value)){
+            alert("请输入用户名！");
+            form1.username.focus;
+            return false;
+        }
+        if(!isDate(form1.birthday.value)){
+            alert("日期格式不对！格式如下20200102");
+            form1.birthday.focus();
+            return false;
+        }
+        return true;
+    };
+
+function playIntroduction(){
+        const base_url = "http://127.0.0.1:5000/static/language/mandarin/"
+        const mandarin_url = "前导语.wav";
+        let myAudio = new Audio();
+        myAudio.preload = true;
+        myAudio.src = base_url + mandarin_url;
+        myAudio.play();
+    }
+
+    window.onload = function () {
+        setTimeout(playIntroduction, 3000)
+    }
+</script>
+<script type="text/javascript">
+
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    const constraints = {audio: false, video: {deviceId: '054b61750c8eb0389ce38da0e2a275f9088bdc0e5fb253d6cacf1c474ceceabf', width: 1280, height: 720}};
+
+    var enumeratorPromise = navigator.mediaDevices.enumerateDevices();
+    console.log(enumeratorPromise);
+
+</script>
+</body>
+</html>

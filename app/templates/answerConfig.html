@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>答案设置</title>
+
+        <style type="text/css">
+        .con {
+            margin: 100px auto 0;
+            width: 700px;
+            height: 300px;
+            background: #FFFFFF;
+            font-size: 25px;
+            line-height: 50px
+        }
+
+        .con form {
+            line-height: 35px;
+        }
+    </style>
+</head>
+<body>
+<div id="div-answer" class="con">
+    <label>请您查看您的信息，如果发生改变，请重新填写。</label><br>
+    <label>当前所在城市：</label> <label id="ori-city">{{answer_config["city"]}}</label><br>
+    <label>当前所在区：</label> <label id="ori-area">{{answer_config["area"]}}</label><br>
+    <label>当前所在街道：</label> <label id="ori-street">{{answer_config["street"]}}</label><br>
+    <label>当前所在楼层：</label> <label id="ori-floor">{{answer_config["floor"]}}</label><br>
+    <label>当前所在地址：</label> <label id="ori-location">{{answer_config["location"]}}</label><br>
+    <form action="/answer/handle" method="post">
+        <label>当前所在城市：</label> <input type="text"  name="city" autocomplete="off"/><br>
+        <label>当前所在区：</label> <input type="text"  name="area" autocomplete="off"/><br>
+        <label>当前所在街道：</label> <input type="text"  name="street" autocomplete="off"/><br>
+        <label>当前所在楼层：</label> <input type="text"  name="floor" autocomplete="off"/><br>
+        <label>当前所在地址：</label> <input type="text"  name="location" autocomplete="off"/><br>
+        <input type="submit" value="提交信息" style="font-size:25px"/>
+    </form>
+</div>
+<script type="text/javascript" src="../static/js/jquery.js"></script>
+<script type="text/javascript">
+
+</script>
+</body>
+</html>
